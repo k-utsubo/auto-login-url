@@ -1,0 +1,15 @@
+/* ページング処理 */
+.admin_pagination ul li {
+    display: inline-block;
+    padding: 0px 1px 0px 1px;
+    margin: 0px 3px 0px 3px;
+    background-color: #DBDBDB;
+}
+.admin_pagination ul li .current a{
+    color: #FFFFFF;
+    background-color: #666666;
+}
+.admin_pagination ul a {
+    display: block;
+    padding: 8px 10px 8px 10px;
+}

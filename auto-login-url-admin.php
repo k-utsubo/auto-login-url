@@ -2,16 +2,15 @@
 
 
 register_activation_hook(__FILE__, array('AutoLoginUrl', 'auto_login_url_activate'));
-
-//停止時の設定
 register_deactivation_hook(__FILE__, array('AutoLoginUrl', 'auto_login_url_unactivate'));
-
-//アンインストール時の設定
 register_uninstall_hook(__FILE__, array('AutoLoginUrl', 'auto_login_url_uninstall'));
 
 
 class AutoLoginUrl
 {
+    static $TABLE="autologin";
+    static $DBVER="1.0";
+    static $PAGELIMIT=10;
     function __construct()
     {
         //add_action('admin_menu', array($this, 'add_pages'));
@@ -20,7 +19,7 @@ class AutoLoginUrl
               'Auto_Login_Url', // page_title（オプションページのHTMLのタイトル>）
               'AutoLoginUrl', // menu_title（メニューで表示されるタイトル）
               'administrator', // capability
-              'auto-login-url', // menu_slug（URLのスラッグこの例だとoptions-general.php?page=hello-world）
+              'auto-login-url', // menu_slug（URLのスラッグこの例だとoptions-general.php?page=auto-login-url）
               array($this, 'auto_login_url_plugin')
          );
         });
@@ -51,7 +50,6 @@ class AutoLoginUrl
         $urlpath = plugins_url('admin.css', __FILE__);
         wp_register_style('post6style', $urlpath);
         wp_enqueue_style('post6style');
-        _log("myplgin_load");
     }
 
  
@@ -67,7 +65,7 @@ class AutoLoginUrl
     } 
 
     /**
-     * 管理画面のHTMLの生成と表示
+     * create html of adminstrator page
      */
     function auto_login_url_plugin()
     {
@@ -75,30 +73,30 @@ class AutoLoginUrl
         if (isset($_REQUEST["submit"]["detail"])) {
             //詳細
             self::detail();
-        } else if (isset($_REQUEST["submit"]["edit"])) {
-            //修正
-            self::edit();
-        } else if (isset($_REQUEST["submit"]["edit_check"])) {
-            //修正確認
-            self::edit_check();
-        } else if (isset($_REQUEST["submit"]["edit_exec"])) {
-            //修正実行
-            self::edit_exec();
+        //} else if (isset($_REQUEST["submit"]["edit"])) {
+        //    //修正
+        //    self::edit();
+        //} else if (isset($_REQUEST["submit"]["edit_check"])) {
+        //    //修正確認
+        //    self::edit_check();
+        //} else if (isset($_REQUEST["submit"]["edit_exec"])) {
+        //    //修正実行
+        //    self::edit_exec();
         } else if (isset($_REQUEST["submit"]["delete_check"])) {
             //削除確認
             self::delete_check();
         } else if (isset($_REQUEST["submit"]["delete_exec"])) {
             //削除実行
             self::delete_exec();
-        } else if (isset($_REQUEST["submit"]["regist"])) {
-            //新規登録
-            self::regist();
-        } else if (isset($_REQUEST["submit"]["regist_check"])) {
-            //新規登録確認
-            self::regist_check();
-        } else if (isset($_REQUEST["submit"]["regist_exec"])) {
-            //新規登録
-            self::regist_exec();
+        //} else if (isset($_REQUEST["submit"]["regist"])) {
+        //    //新規登録
+        //    self::regist();
+        //} else if (isset($_REQUEST["submit"]["regist_check"])) {
+        //    //新規登録確認
+        //    self::regist_check();
+        //} else if (isset($_REQUEST["submit"]["regist_exec"])) {
+        //    //新規登録
+        //    self::regist_exec();
         } else if (isset($_REQUEST["submit"]["regist_file"])) {
             //ファイルアップロード用画面
             self::regist_file();
@@ -106,23 +104,23 @@ class AutoLoginUrl
             //ファイルアップロード処理
             self::regist_file_up();
         } else {
-            //初期表示
+            // initial display 
             self::disp();
         }
     }
  
     /**
-     * 初期表示
+     * initial display 
      */
     function disp()
     {
-        //データ一覧
+        // data list
         echo <<< EOL
     <form action="" method="post">
      
-    <h2>データ一覧</h2>
-    <input type='submit' name='submit[regist]' class='button-primary' value='新規登録' />
-    <input type='submit' name='submit[regist_file]' class='button-primary' value='新規登録(ファイルアップロード)' />
+    <h2>Data List</h2>
+    <input type='submit' name='submit[regist]' class='button-primary' value='Register' />
+    <input type='submit' name='submit[regist_file]' class='button-primary' value='Retister(Upload File)' />
 
      
     <div class="wrap">
@@ -130,47 +128,49 @@ class AutoLoginUrl
     <table class="wp-list-table widefat striped posts">
         <tr>
             <th nowrap>ID</th>
-            <th nowrap>名前</th>
-            <th nowrap>登録日時</th>
-            <th nowrap>詳細</th>
-            <th nowrap>編集</th>
+            <th nowrap>user_id</th>
+            <th nowrap>from_date</th>
+            <th nowrap>expire_date</th>
+            <th nowrap>detail</th>
+            <th nowrap>delete</th>
         </tr>
 EOL;
      
         $pageid = filter_input(INPUT_GET, 'pageid');
-        //1ページあたりの件数
-        $limit = 10;
+        //  display rows per a page
+        $limit = $PAGELIMIT;
 
         global $wpdb;
      
-        //全件数取得
-        $tbl_name = $wpdb->prefix . 'sample_mst';
+        // get all data number
+        $tbl_name = $wpdb->prefix . $TABLE;
         $sql = "SELECT count(*) AS CNT FROM {$tbl_name}";
         $rows = $wpdb->get_results($sql);
         $recordcount = $rows[0]->CNT;
         _log("recordcount=".$recordcount);
         
-        //offsetの値を決定
+        // decide offset value
         $offset = $pageid * $limit;
         _log("offset=".$offset.",limit=".$limit);
         
-        //offset と limitによる画面表示用のデータ取得
+        //create sql using offset and  limit
         $sql = "SELECT * FROM {$tbl_name} ORDER BY id limit {$offset}, {$limit}";
-        //通常の取得方法(SQL実行結果を、オブジェクトとして取得)
+        // get data
         $rows = $wpdb->get_results($sql);
 
         foreach($rows as $row) {
             echo "<tr>";
             echo "<td>" . $row->id . "</td>";
-            echo "<td>" . $row->sample_name . "</td>";
-            echo "<td>" . $row->create_date . "</td>";
+            echo "<td>" . $row->user_id . "</td>";
+            echo "<td>" . $row->from_date . "</td>";
+            echo "<td>" . $row->expire_date . "</td>";
             echo "<td>";
             echo "<input type='submit' name='submit[detail][" . $row->id . "]'";
-            echo " class='button-primary' value='詳細' />";
+            echo " class='button-primary' value='detail' />";
             echo "</td>";
             echo "<td>";
-            echo "<input type='submit' name='submit[edit][" . $row->id . "]'";
-            echo " class='button-primary' value='編集' />";
+            echo "<input type='submit' name='submit[delete][" . $row->id . "]'";
+            echo " class='button-primary' value='delete' />";
             echo "</td>";
             echo "</tr>";
         }
@@ -182,7 +182,7 @@ EOL;
         
         $args = array(
             'label' => __('Per Page'),
-            'default' => 10,
+            'default' => $PAGELIMIT,
             'option' => 'disp'
         );
         $page_html = self::pagination($recordcount);
@@ -207,7 +207,7 @@ EOL;
     function pagination($recordcount)
     {
         $count = $recordcount;
-        $limit = 10;
+        $limit = $PAGELIMIT;
      
         //レコード総数がゼロのときは何も出力しない
         if (0 === $count) {
@@ -235,7 +235,7 @@ EOL;
         $urlparams['pageid'] = 0;
         $items[] = sprintf('<span><a href="?%s">%s</a></span>'
             , http_build_query($urlparams)
-            , '最初'
+            , 'First'
         );
      
         //表示中のページが先頭ではない時
@@ -243,7 +243,7 @@ EOL;
             $urlparams['pageid'] = $intCurrentPage - 1;
             $items[] = sprintf('<span><a href="?%s">%s</a></span>'
                 , http_build_query($urlparams)
-                , '前へ'
+                , 'Prev'
             );
         }
      
@@ -261,7 +261,7 @@ EOL;
             $urlparams['pageid'] = $intCurrentPage + 1;
             $items[] = sprintf('<span><a href="?%s">%s</a></span>'
                 , http_build_query($urlparams)
-                , '次へ'
+                , 'Next'
             );
         }
      
@@ -269,7 +269,7 @@ EOL;
         $urlparams['pageid'] = $intMaxpage - 1;
         $items[] = sprintf('<span><a href="?%s">%s</a></span>'
             , http_build_query($urlparams)
-            , '最後'
+            , 'Last'
         );
      
         return $items;
@@ -281,19 +281,19 @@ EOL;
     function detail()
     {
         //押されたボタンのIDを取得する
-        if (array_search("詳細", $_REQUEST["submit"]["detail"])) {
-            $form_id = array_search("詳細", $_REQUEST["submit"]["detail"]);
+        if (array_search("detail", $_REQUEST["submit"]["detail"])) {
+            $form_id = array_search("detail", $_REQUEST["submit"]["detail"]);
         }
  
         //データ一覧
         echo <<< EOL
 <form action="" method="post">
-    <h2>データ詳細</h2>
+    <h2>Detail</h2>
 EOL;
  
         global $wpdb;
  
-        $tbl_name = $wpdb->prefix . 'sample_mst';
+        $tbl_name = $wpdb->prefix . $TABLE;
         $sql = "SELECT * FROM {$tbl_name} WHERE id = %d;";
         $prepared = $wpdb->prepare($sql, $form_id);
         $rows = $wpdb->get_results($prepared, ARRAY_A);
@@ -305,22 +305,31 @@ EOL;
         <td>{$rows[0]["id"]}</td>
     </tr>
     <tr>
-        <td>NAME</td>
-        <td>{$rows[0]["sample_name"]}</td>
+        <td>User ID</td>
+        <td>{$rows[0]["user_id"]}</td>
     </tr>
     <tr>
-        <td>登録日時</td>
-        <td>{$rows[0]["create_date"]}</td>
+        <td>From Date</td>
+        <td>{$rows[0]["from_date"]}</td>
+    </tr>
+    <tr>
+        <td>Expire Date</td>
+        <td>{$rows[0]["expire_date"]}</td>
+    </tr>
+    <tr>
+        <td>Redirect URL</td>
+        <td>{$rows[0]["redirect"]}</td>
     </tr>
 </table>
-<input type='submit' name='submit[]' class='button-primary' value='戻る' />
+<input type='submit' name='submit[]' class='button-primary' value='Back' />
 EOL;
         echo "</form>";
     }
  
     /**
-     * 修正
+     *  edit
      */
+/*
     function edit()
     {
         if (isset($_REQUEST["form_id"])) {
@@ -335,7 +344,7 @@ EOL;
  
             global $wpdb;
  
-            $tbl_name = $wpdb->prefix . 'sample_mst';
+            $tbl_name = $wpdb->prefix . $TABLE;
             $sql = "SELECT * FROM {$tbl_name} WHERE id = %d;";
             $prepared = $wpdb->prepare($sql, $form_id);
             $rows = $wpdb->get_results($prepared, ARRAY_A);
@@ -377,10 +386,12 @@ EOL;
 EOL;
         echo "</form>";
     }
+*/
  
     /**
      * 編集確認
      */
+/*
     function edit_check()
     {
         $form_id = $_REQUEST["form_id"];
@@ -414,10 +425,12 @@ EOL;
 EOL;
         echo "</form>";
     }
+*/
  
     /**
      * 編集実行
      */
+/*
     function edit_exec()
     {
         global $wpdb;
@@ -427,7 +440,7 @@ EOL;
         $update_date = date("Y-m-d H:i:s");
  
         //投稿を更新
-        $tbl_name = $wpdb->prefix . 'sample_mst';
+        $tbl_name = $wpdb->prefix . $TABLE;
         $result = $wpdb->update(
             $tbl_name,
             array('sample_name' => $sample_name,),
@@ -451,9 +464,9 @@ EOL;
 EOL;
         echo "</form>";
     }
-
+*/
     /*
-     * 削除確認
+     * Confirm delete
      */
     function delete_check()
     {
@@ -461,63 +474,70 @@ EOL;
  
         global $wpdb;
  
-        $tbl_name = $wpdb->prefix . 'sample_mst';
+        $tbl_name = $wpdb->prefix . $TABLE;
         $sql = "SELECT * FROM {$tbl_name} WHERE id = %d;";
         $prepared = $wpdb->prepare($sql, $form_id);
         $rows = $wpdb->get_results($prepared, ARRAY_A);
  
-        //データ一覧
+        // data list
         echo <<< EOL
 <form action="" method="post">
-    <h2>データ削除確認</h2>
-    <table border="1">
-        <tr>
-            <td>ID</td>
-            <td>{$form_id}</td>
-        </tr>
-        <tr>
-            <td>NAME</td>
-            <td>{$rows[0]["sample_name"]}</td>
-        </tr>
-        <tr>
-            <td>登録日時</td>
-            <td>{$rows[0]["create_date"]}</td>
-        </tr>
-    </table>
- 
+    <h2>Comfirm delete data</h2>
+<table border="1">
+    <tr>
+        <td>ID</td>
+        <td>{$from_id}</td>
+    </tr>
+    <tr>
+        <td>User ID</td>
+        <td>{$rows[0]["user_id"]}</td>
+    </tr>
+    <tr>
+        <td>From Date</td>
+        <td>{$rows[0]["from_date"]}</td>
+    </tr>
+    <tr>
+        <td>Expire Date</td>
+        <td>{$rows[0]["expire_date"]}</td>
+    </tr>
+    <tr>
+        <td>Redirect URL</td>
+        <td>{$rows[0]["redirect"]}</td>
+    </tr>
+</table>
     <input type="hidden" name="form_id" value="{$form_id}">
  
-    <input type='submit' name='submit[delete_exec]' class='button-primary' value='削除する' />
-    <input type='submit' name='submit[edit]' class='button-primary' value='戻る' />
+    <input type='submit' name='submit[delete_exec]' class='button-primary' value='delete' />
+    <input type='submit' name='submit[edit]' class='button-primary' value='Back' />
 EOL;
         echo "</form>";
     }
 
     /**
-     * 削除実行
+     *  execute delete data
      */
     function delete_exec()
     {
         $form_id = $_REQUEST["form_id"];
  
-        //データを削除
+        // delete data
         global $wpdb;
-        $tbl_name = $wpdb->prefix . 'sample_mst';
+        $tbl_name = $wpdb->prefix . $TABLE;
         $sql = "DELETE FROM {$tbl_name} WHERE id = %s;";
         $dlt = $wpdb->query($wpdb->prepare($sql, $form_id));
  
-        //データ一覧
+        // delete 
         echo <<< EOL
 <form action="" method="post">
-    <h2>データ編集認</h2>
+    <h2>Finish delete data</h2>
 EOL;
  
         echo "<div class='updated fade'><p><strong>";
-        echo _e('削除が完了しました');
+        echo _e('Already deleted');
         echo "</strong></p></div>";
  
         echo <<<EOL
-<input type='submit' name='submit[]' class='button-primary' value='戻る' />
+<input type='submit' name='submit[]' class='button-primary' value='Back' />
 EOL;
         echo "</form>";
     }
@@ -526,6 +546,7 @@ EOL;
     /**
      * 登録
      */
+/*
     function regist()
     {
         if ($error_message_flg !== false) {
@@ -559,10 +580,12 @@ EOL;
 </form>
 EOL;
     }
+*/
  
     /**
      * 登録確認
      */
+/*
     function regist_check()
     {
         //入力値が空白の場合の処理(ここでは単純に0バイトだったら)
@@ -591,11 +614,12 @@ EOL;
 EOL;
         echo "</form>";
     }
- 
+*/ 
  
     /**
      * 登録実行
      */
+/*
     function regist_exec()
     {
         global $wpdb;
@@ -603,7 +627,7 @@ EOL;
         $sample_name = $_REQUEST["sample_name"];
  
         //投稿を登録
-        $table_name = $wpdb->prefix . 'sample_mst';
+        $table_name = $wpdb->prefix . $TABLE;
         $result = $wpdb->insert(
             $table_name,
             array(
@@ -626,6 +650,7 @@ EOL;
         echo "</form>";
     }
 
+*/
 
     function regist_file($error_message_flg = null)
     {
@@ -690,18 +715,18 @@ EOL;
     function auto_login_url_activate()
     {
         //テーブル作成などなど
-        self::create_tables_sample_mst();     
+        //self::create_tables_usermeta();     
           
     }
  
-    function create_tables_sample_mst()
+    function create_tables_usermeta()
     {
         global $wpdb;
  
         $charset_collate = "";
  
         //接頭辞の追加(socal_count_cache)
-        $table_name = $wpdb->prefix . 'sample_mst';
+        $table_name = $wpdb->prefix . $TABBLE;
  
         //charsetを指定する
         if (!empty($wpdb->charset)) {
@@ -716,8 +741,11 @@ EOL;
         $sql = <<< EOL
 CREATE TABLE {$table_name} (
 id              INT NOT NULL AUTO_INCREMENT,
-sample_name     VARCHAR(128),
-create_date     DATETIME,
+user_id     bigint(20) unsigned NOT NULL,
+password    varchar(255) NOT NULL,
+from_date     DATETIME DEFAULT '0000-00-00 00:00:00' NOT NULL,
+expire_date     DATETIME DEFAULT '2038-01-18 00:00:00' NOT NULL,
+redirect    varchar(255) DEFAULT '' NOT NULL,
 PRIMARY KEY(id)
 ) {$charset_collate};
 EOL;
@@ -725,36 +753,38 @@ EOL;
         //dbDeltaを実行する為に必要
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql);
+        // save database version
+        add_option("auto_login_url_db_version",$DBVER);
     }
 
     /**
-    * 停止時の実行
+    *  call when plugin stopped
     */
     function auto_login_url_unactivate()
     {
-        //テーブルデータ消去などなど
+        // delete table data
         global $wpdb;
      
-        //削除するテーブルの決定
-        $table_name = $wpdb->prefix . 'sample_mst';
+        // determin table name
+        $table_name = $wpdb->prefix . $TALBE;
      
-        //テーブル削除
-        $sql_delete = "DELETE FROM " . $table_name . ";";
+        // delete table data
+        $sql_delete = "DELETE FROM " . $table_name.";";
         $wpdb->query($sql_delete);
     }
 
     /**
-     * 停止時の実行
+     * call when plugin uninstalled
      */
     function auto_login_url_uninstall()
     {
         global $wpdb;
      
-        //削除するテーブル名の決定
-        $table_name = $wpdb->prefix . 'sample_mst';
+        //determin delete table name
+        $table_name = $wpdb->prefix . $TABLE;
      
-        //テーブル削除
-        $sql_drop = "DROP TABLE " . $table_name . ";";
+        //drop table
+        $sql_drop = "DROP TALBE " . $table_name . ";";
         $wpdb->query($sql_drop);
     }
 }
