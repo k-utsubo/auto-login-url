@@ -8,9 +8,9 @@ register_uninstall_hook(__FILE__, array('AutoLoginUrl', 'auto_login_url_uninstal
 
 class AutoLoginUrl
 {
-    static $TABLE="autologin";
-    static $DBVER="1.0";
-    static $PAGELIMIT=10;
+    public static $TABLE="autologin";
+    public static $DBVER="1.0";
+    public static $PAGELIMIT=10;
     function __construct()
     {
         //add_action('admin_menu', array($this, 'add_pages'));
@@ -138,12 +138,12 @@ EOL;
      
         $pageid = filter_input(INPUT_GET, 'pageid');
         //  display rows per a page
-        $limit = $PAGELIMIT;
+        $limit = AutoLoginUrl::$PAGELIMIT;
 
         global $wpdb;
      
         // get all data number
-        $tbl_name = $wpdb->prefix . $TABLE;
+        $tbl_name = $wpdb->prefix . AutoLoginUrl::$TABLE;
         $sql = "SELECT count(*) AS CNT FROM {$tbl_name}";
         $rows = $wpdb->get_results($sql);
         $recordcount = $rows[0]->CNT;
@@ -182,7 +182,7 @@ EOL;
         
         $args = array(
             'label' => __('Per Page'),
-            'default' => $PAGELIMIT,
+            'default' => AutoLoginUrl::$PAGELIMIT,
             'option' => 'disp'
         );
         $page_html = self::pagination($recordcount);
@@ -207,7 +207,7 @@ EOL;
     function pagination($recordcount)
     {
         $count = $recordcount;
-        $limit = $PAGELIMIT;
+        $limit = AutoLoginUrl::$PAGELIMIT;
      
         //レコード総数がゼロのときは何も出力しない
         if (0 === $count) {
@@ -293,7 +293,7 @@ EOL;
  
         global $wpdb;
  
-        $tbl_name = $wpdb->prefix . $TABLE;
+        $tbl_name = $wpdb->prefix . AutoLoginUrl::$TABLE;
         $sql = "SELECT * FROM {$tbl_name} WHERE id = %d;";
         $prepared = $wpdb->prepare($sql, $form_id);
         $rows = $wpdb->get_results($prepared, ARRAY_A);
@@ -344,7 +344,7 @@ EOL;
  
             global $wpdb;
  
-            $tbl_name = $wpdb->prefix . $TABLE;
+            $tbl_name = $wpdb->prefix . AutoLoginUrl::$TABLE;
             $sql = "SELECT * FROM {$tbl_name} WHERE id = %d;";
             $prepared = $wpdb->prepare($sql, $form_id);
             $rows = $wpdb->get_results($prepared, ARRAY_A);
@@ -440,7 +440,7 @@ EOL;
         $update_date = date("Y-m-d H:i:s");
  
         //投稿を更新
-        $tbl_name = $wpdb->prefix . $TABLE;
+        $tbl_name = $wpdb->prefix . AutoLoginUrl::$TABLE;
         $result = $wpdb->update(
             $tbl_name,
             array('sample_name' => $sample_name,),
@@ -474,7 +474,7 @@ EOL;
  
         global $wpdb;
  
-        $tbl_name = $wpdb->prefix . $TABLE;
+        $tbl_name = $wpdb->prefix . AutoLoginUrl::$TABLE;
         $sql = "SELECT * FROM {$tbl_name} WHERE id = %d;";
         $prepared = $wpdb->prepare($sql, $form_id);
         $rows = $wpdb->get_results($prepared, ARRAY_A);
@@ -522,7 +522,7 @@ EOL;
  
         // delete data
         global $wpdb;
-        $tbl_name = $wpdb->prefix . $TABLE;
+        $tbl_name = $wpdb->prefix . AutoLoginUrl::$TABLE;
         $sql = "DELETE FROM {$tbl_name} WHERE id = %s;";
         $dlt = $wpdb->query($wpdb->prepare($sql, $form_id));
  
@@ -627,7 +627,7 @@ EOL;
         $sample_name = $_REQUEST["sample_name"];
  
         //投稿を登録
-        $table_name = $wpdb->prefix . $TABLE;
+        $table_name = $wpdb->prefix . AutoLoginUrl::$TABLE;
         $result = $wpdb->insert(
             $table_name,
             array(
@@ -754,7 +754,7 @@ EOL;
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql);
         // save database version
-        add_option("auto_login_url_db_version",$DBVER);
+        add_option("auto_login_url_db_version",AutoLoginUrl::$DBVER);
     }
 
     /**
@@ -781,7 +781,7 @@ EOL;
         global $wpdb;
      
         //determin delete table name
-        $table_name = $wpdb->prefix . $TABLE;
+        $table_name = $wpdb->prefix . AutoLoginUrl::$TABLE;
      
         //drop table
         $sql_drop = "DROP TALBE " . $table_name . ";";
