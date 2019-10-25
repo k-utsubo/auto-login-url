@@ -13,6 +13,8 @@ class AutoLoginUrl
     public static $PAGELIMIT=10;
     function __construct()
     {
+        //_log("_construct");
+        //_log("TABLE:".AutoLoginUrl::$TABLE);
         //add_action('admin_menu', array($this, 'add_pages'));
         add_action("admin_menu",function(){
          add_options_page(
@@ -714,13 +716,7 @@ EOL;
 
     function auto_login_url_activate()
     {
-        //テーブル作成などなど
-        //self::create_tables_usermeta();     
-          
-    }
- 
-    function create_tables_usermeta()
-    {
+        _log("auto_login_url_activate");
         global $wpdb;
  
         $charset_collate = "";
