@@ -1,9 +1,6 @@
 <?php
 
 
-register_activation_hook(__FILE__, array('AutoLoginUrl', 'auto_login_url_activate'));
-register_deactivation_hook(__FILE__, array('AutoLoginUrl', 'auto_login_url_unactivate'));
-register_uninstall_hook(__FILE__, array('AutoLoginUrl', 'auto_login_url_uninstall'));
 
 
 class AutoLoginUrl
@@ -13,6 +10,15 @@ class AutoLoginUrl
     public static $PAGELIMIT=10;
     function __construct()
     {
+        if (function_exists('register_activation_hook')){
+            register_activation_hook(__FILE__, array($this, 'auto_login_url_activate'));
+        }
+        if (function_exists('register_deactivation_hook')){
+            register_deactivation_hook(__FILE__, array($this, 'auto_login_url_unactivate'));
+        }
+        if (function_exists('register_uninstall_hook')){
+            register_uninstall_hook(__FILE__,  'auto_login_url_uninstall');
+        }
         //_log("_construct");
         //_log("TABLE:".AutoLoginUrl::$TABLE);
         //add_action('admin_menu', array($this, 'add_pages'));
@@ -714,7 +720,7 @@ EOL;
 
 
 
-    function auto_login_url_activate()
+    static function auto_login_url_activate()
     {
         _log("auto_login_url_activate");
         global $wpdb;
@@ -756,7 +762,7 @@ EOL;
     /**
     *  call when plugin stopped
     */
-    function auto_login_url_unactivate()
+    static function auto_login_url_unactivate()
     {
         // delete table data
         global $wpdb;
@@ -772,7 +778,7 @@ EOL;
     /**
      * call when plugin uninstalled
      */
-    function auto_login_url_uninstall()
+    static function auto_login_url_uninstall()
     {
         global $wpdb;
      
