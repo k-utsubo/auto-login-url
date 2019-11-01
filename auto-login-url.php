@@ -149,8 +149,8 @@ class AutoLoginUrl
     		}
     */
     
-    		//if ( hash_equals( $token["password"], $_GET['auto_login_url_token'] ) and $token["from_date"]<=$time and $time<=$token["to_date"]) {
-    		if ( hash_equals( $token["password"], $_GET['auto_login_url_token'] ) and $token["from_date"]<=$time ) {
+    		//if ( hash_equals( $token["token"], $_GET['auto_login_url_token'] ) and $token["start_date"]<=$time and $time<=$token["to_date"]) {
+    		if ( hash_equals( $token["token"], $_GET['auto_login_url_token'] ) and $token["start_date"]<=$time ) {
     			$is_valid = true;
     			if( $token["expire_date"]==0){
     				//_log("unset2");
@@ -171,11 +171,8 @@ class AutoLoginUrl
     	//update_user_meta( $user->ID, 'auto_login_url_token', $tokens );
     	wp_set_auth_cookie( $user->ID, true, is_ssl() );
     
-    	//_log("admin_url=". admin_url());
-    	//_log("site_url=". site_url());
-    	//_log("redirect=".$token["redirect"]);
-    	if ( $token["redirect"] ){
-    		wp_safe_redirect( site_url().$token["redirect"] );
+    	if ( $token["redirect_url"] ){
+    		wp_safe_redirect( site_url().$token["redirect_url"] );
     	}else{
     		wp_safe_redirect( admin_url() );
     	}
@@ -194,30 +191,30 @@ class AutoLoginUrl
         if (isset($_REQUEST["submit"]["detail"])) {
             //詳細
             self::detail();
-        //} else if (isset($_REQUEST["submit"]["edit"])) {
-        //    //修正
-        //    self::edit();
-        //} else if (isset($_REQUEST["submit"]["edit_check"])) {
-        //    //修正確認
-        //    self::edit_check();
-        //} else if (isset($_REQUEST["submit"]["edit_exec"])) {
-        //    //修正実行
-        //    self::edit_exec();
+        } else if (isset($_REQUEST["submit"]["edit"])) {
+            //修正
+            self::edit();
+        } else if (isset($_REQUEST["submit"]["edit_check"])) {
+            //修正確認
+            self::edit_check();
+        } else if (isset($_REQUEST["submit"]["edit_exec"])) {
+            //修正実行
+            self::edit_exec();
         } else if (isset($_REQUEST["submit"]["delete_check"])) {
             //削除確認
             self::delete_check();
         } else if (isset($_REQUEST["submit"]["delete_exec"])) {
             //削除実行
             self::delete_exec();
-        //} else if (isset($_REQUEST["submit"]["regist"])) {
-        //    //新規登録
-        //    self::regist();
-        //} else if (isset($_REQUEST["submit"]["regist_check"])) {
-        //    //新規登録確認
-        //    self::regist_check();
-        //} else if (isset($_REQUEST["submit"]["regist_exec"])) {
-        //    //新規登録
-        //    self::regist_exec();
+        } else if (isset($_REQUEST["submit"]["regist"])) {
+            //新規登録
+            self::regist();
+        } else if (isset($_REQUEST["submit"]["regist_check"])) {
+            //新規登録確認
+            self::regist_check();
+        } else if (isset($_REQUEST["submit"]["regist_exec"])) {
+            //新規登録
+            self::regist_exec();
         } else if (isset($_REQUEST["submit"]["regist_file"])) {
             //ファイルアップロード用画面
             self::regist_file();
@@ -251,7 +248,7 @@ class AutoLoginUrl
         <tr>
             <th nowrap>ID</th>
             <th nowrap>user_id</th>
-            <th nowrap>from_date</th>
+            <th nowrap>start_date</th>
             <th nowrap>expire_date</th>
             <th nowrap>detail</th>
             <th nowrap>delete</th>
@@ -284,7 +281,7 @@ EOL;
             echo "<tr>";
             echo "<td>" . $row->id . "</td>";
             echo "<td>" . $row->user_id . "</td>";
-            echo "<td>" . $row->from_date . "</td>";
+            echo "<td>" . $row->start_date . "</td>";
             echo "<td>" . $row->expire_date . "</td>";
             echo "<td>";
             echo "<input type='submit' name='submit[detail][" . $row->id . "]'";
@@ -331,28 +328,28 @@ EOL;
         $count = $recordcount;
         $limit = $this->PAGELIMIT;
      
-        //レコード総数がゼロのときは何も出力しない
+        // if no record, do nothing
         if (0 === $count) {
             return '';
         }
      
-        //現在表示中のページ番号（ゼロスタート）
+        // current page number,  0-
         $intCurrentPage = self::getCurrentPage();
      
-        //ページの最大数
+        // max page number
         $intMaxpage = ceil($count / $limit);
      
-        //現在ページの前後３ページを出力
+        // output 3 pages before/after current page
         $intStartpage = (2 < $intCurrentPage) ? $intCurrentPage - 3 : 0;
         $intEndpage = (($intStartpage + 7) < $intMaxpage) ? $intStartpage + 7 : $intMaxpage;
      
-        //url組み立て
+        //make url
         $urlparams = filter_input_array(INPUT_GET);
      
         $items = [];
      
-        //ページURLの生成
-        //最初
+        // create page url
+        //first
         $urlparams['page'] = filter_input(INPUT_GET, 'page');
         $urlparams['pageid'] = 0;
         $items[] = sprintf('<span><a href="?%s">%s</a></span>'
@@ -360,7 +357,7 @@ EOL;
             , 'First'
         );
      
-        //表示中のページが先頭ではない時
+        // when current page is not first page
         if (0 < $intCurrentPage) {
             $urlparams['pageid'] = $intCurrentPage - 1;
             $items[] = sprintf('<span><a href="?%s">%s</a></span>'
@@ -378,7 +375,7 @@ EOL;
             );
         }
      
-        //表示中のページが最後ではない時
+        // when current page is not last page
         if ($intCurrentPage < $intMaxpage) {
             $urlparams['pageid'] = $intCurrentPage + 1;
             $items[] = sprintf('<span><a href="?%s">%s</a></span>'
@@ -387,7 +384,7 @@ EOL;
             );
         }
      
-        //最後
+        // last
         $urlparams['pageid'] = $intMaxpage - 1;
         $items[] = sprintf('<span><a href="?%s">%s</a></span>'
             , http_build_query($urlparams)
@@ -397,17 +394,15 @@ EOL;
         return $items;
     }
 
-    /**
-     * 詳細表示
-     */
+    // display detail page
     function detail()
     {
-        //押されたボタンのIDを取得する
+        // get pressed button id
         if (array_search("detail", $_REQUEST["submit"]["detail"])) {
             $form_id = array_search("detail", $_REQUEST["submit"]["detail"]);
         }
  
-        //データ一覧
+        // list of data
         echo <<< EOL
 <form action="" method="post">
     <h2>Detail</h2>
@@ -423,16 +418,12 @@ EOL;
         echo <<<EOL
 <table border="1">
     <tr>
-        <td>ID</td>
-        <td>{$rows[0]["id"]}</td>
-    </tr>
-    <tr>
         <td>User ID</td>
         <td>{$rows[0]["user_id"]}</td>
     </tr>
     <tr>
-        <td>From Date</td>
-        <td>{$rows[0]["from_date"]}</td>
+        <td>StartDate</td>
+        <td>{$rows[0]["start_date"]}</td>
     </tr>
     <tr>
         <td>Expire Date</td>
@@ -440,28 +431,32 @@ EOL;
     </tr>
     <tr>
         <td>Redirect URL</td>
-        <td>{$rows[0]["redirect"]}</td>
+        <td>{$rows[0]["redirect_url"]}</td>
+    </tr>
+    <tr>
+        <td>Secret Key</td>
+        <td>{$rows[0]["secret_key"]}</td>
     </tr>
 </table>
+<input type="hidden" name="form_id" value={$rows[0]["form_id"]}>
 <input type='submit' name='submit[]' class='button-primary' value='Back' />
 EOL;
         echo "</form>";
     }
  
-    /**
-     *  edit
-     */
-/*
     function edit()
     {
         if (isset($_REQUEST["form_id"])) {
             $form_id = $_REQUEST["form_id"];
-            $sample_name = $_REQUEST["sample_name"];
-            $create_date = $_REQUEST["create_date"];
+            $user_id = $_REQUEST["user_id"];
+            $start_date = $_REQUEST["start_date"];
+            $expire_date = $_REQUEST["expire_date"];
+            $redirect_url = $_REQUEST["redirect_url"];
+            $secret_key = $_REQUEST["secret_key"];
         } else {
-            //押されたボタンのIDを取得する
-            if (array_search("編集", $_REQUEST["submit"]["edit"])) {
-                $form_id = array_search("編集", $_REQUEST["submit"]["edit"]);
+            // get pushed button id 
+            if (array_search("edit", $_REQUEST["submit"]["edit"])) {
+                $form_id = array_search("edit", $_REQUEST["submit"]["edit"]);
             }
  
             global $wpdb;
@@ -471,122 +466,131 @@ EOL;
             $prepared = $wpdb->prepare($sql, $form_id);
             $rows = $wpdb->get_results($prepared, ARRAY_A);
  
-            $sample_name = $rows[0]["sample_name"];
-            $create_date = $rows[0]["create_date"];
+            $form_id = $rows[0]["form_id"];
+            $user_id = $rows[0]["user_id"];
+            $start_date = $rows[0]["start_date"];
+            $expire_date = $rows[0]["expire_date"];
+            $redirect_url = $rows[0]["redirect_url"];
+            $secret_key = $rows[0]["secret_key"];
         }
  
-        //データ一覧
         echo <<< EOL
 <form action="" method="post">
-    <h2>データ編集</h2>
+    <h2>edit</h2>
 EOL;
  
  
         echo <<<EOL
 <table border="1">
     <tr>
-        <td>ID</td>
-        <td>{$form_id}</td>
-    </tr>
-    <tr>
-        <td>NAME</td>
+        <td>user_id</td>
         <td>
-            <input type="text" name="sample_name" value="{$sample_name}">
+            <input type="text" name="user_id" value="{$user_id}">
         </td>
     </tr>
     <tr>
-        <td>登録日時</td>
-        <td>{$create_date}</td>
+        <td>start_date</td>
+        <td>
+            <input type="text" name="start_date" value="{$start_date}">
+        </td>
+    </tr>
+    <tr>
+        <td>expire_date</td>
+        <td>
+            <input type="text" name="expire_date" value="{$expire_date}">
+        </td>
+    </tr>
+    <tr>
+        <td>token</td>
+        <td>
+            <input type="text" name="seacret_key" value="{$seacret_key}">
+        </td>
     </tr>
 </table>
  
 <input type="hidden" name="form_id" value="{$form_id}">
-<input type="hidden" name="create_date" value="{$create_date}">
  
-<input type='submit' name='submit[edit_check]' class='button-primary' value='編集内容を確認する' />
-<input type='submit' name='submit[]' class='button-primary' value='戻る' />
+<input type='submit' name='submit[edit_check]' class='button-primary' value='registration confirmed' />
+<input type='submit' name='submit[]' class='button-primary' value='back' />
 EOL;
         echo "</form>";
     }
-*/
  
-    /**
-     * 編集確認
-     */
-/*
     function edit_check()
     {
         $form_id = $_REQUEST["form_id"];
-        $sample_name = $_REQUEST["sample_name"];
-        $create_date = $_REQUEST["create_date"];
+        $user_id = $_REQUEST["user_id"];
+        $start_date = $_REQUEST["start_date"];
+        $expire_date = $_REQUEST["expire_date"];
+        $redirect_url = $_REQUEST["redirect_url"];
+        $secret_key = $_REQUEST["secret_key"];
  
-        //データ一覧
         echo <<< EOL
 <form action="" method="post">
-    <h2>データ編集確認</h2>
+    <h2>confirm</h2>
 EOL;
  
         echo <<<EOL
 <table border="1">
     <tr>
-        <td>ID</td>
-        <td>{$form_id}</td>
+        <td>user_id</td>
+        <td>{$user_id}</td>
     </tr>
     <tr>
-        <td>NAME</td>
-        <td>{$sample_name}</td>
+        <td>start_date</td>
+        <td>{$start_date}</td>
+    </tr>
+    <tr>
+        <td>expire_date</td>
+        <td>{$expire_date}</td>
+    </tr>
+    <tr>
+        <td>seacret_key</td>
+        <td>{$seacret_key}</td>
     </tr>
 </table>
  
 <input type="hidden" name="form_id" value="{$form_id}">
-<input type="hidden" name="sample_name" value="{$sample_name}">
-<input type="hidden" name="create_date" value="{$create_date}">
  
-<input type='submit' name='submit[edit_exec]' class='button-primary' value='編集する' />
-<input type='submit' name='submit[edit]' class='button-primary' value='戻る' />
+<input type='submit' name='submit[edit_exec]' class='button-primary' value='edit' />
+<input type='submit' name='submit[edit]' class='button-primary' value='backる' />
 EOL;
         echo "</form>";
     }
-*/
  
-    /**
-     * 編集実行
-     */
-/*
     function edit_exec()
     {
         global $wpdb;
  
         $form_id = $_REQUEST["form_id"];
-        $sample_name = $_REQUEST["sample_name"];
+        $user_id = $_REQUEST["user_id"];
         $update_date = date("Y-m-d H:i:s");
  
-        //投稿を更新
+        //update post
         $tbl_name = $wpdb->prefix . $this->TABLE;
         $result = $wpdb->update(
             $tbl_name,
-            array('sample_name' => $sample_name,),
+            array('user_id' => $user_id,),
             array('id' => $form_id,),
             array('%s'),
             array('%d')
         );
  
-        //データ一覧
+        // list of data
         echo <<< EOL
 <form action="" method="post">
-    <h2>データ編集認</h2>
+    <h2>registration confirmed</h2>
 EOL;
  
         echo "<div class='updated fade'><p><strong>";
-        echo _e('更新が完了しました');
+        echo _e('updated');
         echo "</strong></p></div>";
  
         echo <<<EOL
-<input type='submit' name='submit[]' class='button-primary' value='戻る' />
+<input type='submit' name='submit[]' class='button-primary' value='back' />
 EOL;
         echo "</form>";
     }
-*/
     /*
      * Confirm delete
      */
@@ -607,16 +611,12 @@ EOL;
     <h2>Comfirm delete data</h2>
 <table border="1">
     <tr>
-        <td>ID</td>
-        <td>{$from_id}</td>
-    </tr>
-    <tr>
         <td>User ID</td>
         <td>{$rows[0]["user_id"]}</td>
     </tr>
     <tr>
-        <td>From Date</td>
-        <td>{$rows[0]["from_date"]}</td>
+        <td>StartDate</td>
+        <td>{$rows[0]["start_date"]}</td>
     </tr>
     <tr>
         <td>Expire Date</td>
@@ -624,7 +624,11 @@ EOL;
     </tr>
     <tr>
         <td>Redirect URL</td>
-        <td>{$rows[0]["redirect"]}</td>
+        <td>{$rows[0]["redirect_url"]}</td>
+    </tr>
+    <tr>
+        <td>Secret Key</td>
+        <td>{$rows[0]["secret_key"]}</td>
     </tr>
 </table>
     <input type="hidden" name="form_id" value="{$form_id}">
@@ -665,25 +669,23 @@ EOL;
     }
 
 
-    /**
-     * 登録
-     */
-/*
     function regist()
     {
-        if ($error_message_flg !== false) {
-            $sample_name = esc_attr($_REQUEST["sample_name"]);
+        $user_id="";
+        if (isset($error_message_flg) and $error_message_flg !== false) {
+            $user_id = esc_attr($_REQUEST["user_id"]);
         }
+            
  
         echo <<< EOL
 <form action="" method="post">
     <h2>データ登録</h2>
 EOL;
  
-        //エラーメッセージのフラグがfalseの場合、メッセージを表示する
-        if ($error_message_flg == false) {
+        // if error_message_flg is false, show error message
+        if (isset($error_message_flg) and $error_message_flg == false) {
             echo "<div class='updated fade'><p><strong>";
-            echo _e('NAMEを入力してください');
+            echo _e('Please input user_id');
             echo "</strong></p></div>";
         }
  
@@ -692,7 +694,7 @@ EOL;
         <tr>
             <td>NAME</td>
             <td>
-                <input type="text" name="sample_name" value="{$sample_name}">
+                <input type="text" name="user_id" value="{$user_id}">
             </td>
         </tr>
     </table>
@@ -702,21 +704,19 @@ EOL;
 </form>
 EOL;
     }
-*/
  
     /**
      * 登録確認
      */
-/*
     function regist_check()
     {
         //入力値が空白の場合の処理(ここでは単純に0バイトだったら)
-        if (!strlen($_REQUEST["sample_name"])) {
+        if (!strlen($_REQUEST["user_id"])) {
             self::regist(false);
             return;
         }
          
-        $sample_name = esc_attr($_REQUEST["sample_name"]);
+        $user_id = esc_attr($_REQUEST["user_id"]);
  
         //データ一覧
         echo <<< EOL
@@ -725,35 +725,33 @@ EOL;
 <table border="1">
     <tr>
         <td>NAME</td>
-        <td>{$sample_name}</td>
+        <td>{$user_id}</td>
     </tr>
 </table>
  
-<input type="hidden" name="sample_name" value="{$sample_name}">
+<input type="hidden" name="user_id" value="{$user_id}">
  
 <input type='submit' name='submit[regist_exec]' class='button-primary' value='登録する' />
 <input type='submit' name='submit[regist]' class='button-primary' value='戻る' />
 EOL;
         echo "</form>";
     }
-*/ 
  
     /**
      * 登録実行
      */
-/*
     function regist_exec()
     {
         global $wpdb;
  
-        $sample_name = $_REQUEST["sample_name"];
+        $user_id = $_REQUEST["user_id"];
  
         //投稿を登録
         $table_name = $wpdb->prefix . $this->TABLE;
         $result = $wpdb->insert(
             $table_name,
             array(
-                'sample_name' => $sample_name,
+                'user_id' => $user_id,
                 'create_date' => current_time('mysql')
             )
         );
@@ -772,7 +770,6 @@ EOL;
         echo "</form>";
     }
 
-*/
 
     function regist_file($error_message_flg = null)
     {
@@ -844,10 +841,10 @@ EOL;
 CREATE TABLE {$table_name} (
 id              INT NOT NULL AUTO_INCREMENT,
 user_id     bigint(20) unsigned NOT NULL,
-password    varchar(255) NOT NULL,
-from_date     DATETIME DEFAULT '0000-00-00 00:00:00' NOT NULL,
+seacret_key    varchar(255) NOT NULL,
+start_date     DATETIME DEFAULT '0000-00-00 00:00:00' NOT NULL,
 expire_date     DATETIME DEFAULT '2038-01-18 00:00:00' NOT NULL,
-redirect    varchar(255) DEFAULT '' NOT NULL,
+redirect_url    varchar(255) DEFAULT '' NOT NULL,
 PRIMARY KEY(id)
 ) {$charset_collate};
 EOL;
