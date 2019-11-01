@@ -25,39 +25,52 @@ class AutoLoginUrl
         $this->TABLE='autologin';
         $this->DBVER='1.0';
         $this->PAGELIMIT=10;
-        $this->admin_init();
-    }
     
 
-    public function admin_init()
-    {
-        register_activation_hook(__FILE__, array($this, 'auto_login_url_activate'));
-        //register_deactivation_hook(__FILE__, array($this, 'auto_login_url_unactivate'));
-        register_deactivation_hook(__FILE__,  array($this, 'auto_login_url_uninstall'));
-        //add_action( 'plugins_loaded', array($this, 'auto_login_url_update_db_check') );
+        register_activation_hook(__FILE__, array($this, 'plugin_activate'));
+        //register_deactivation_hook(__FILE__, array($this, 'plugin_unactivate'));
+        register_deactivation_hook(__FILE__,  array($this, 'plugin_uninstall'));
+        //add_action( 'plugins_loaded', array($this, 'update_db_check') );
 
-        add_action( 'init', array($this, 'auto_login_url_handle_token') );
-        add_action( 'admin_menu', array($this, 'add_plugin_admin_menu'));
-        add_action( 'auto_login_url_cleanup_expired_tokens', array($this,'auto_login_url_cleanup_expired_tokens'), 10, 2 );
+        add_action( 'init', array($this, 'handle_token') );
+        add_action( 'admin_menu', array($this, 'add_pages'));
+        add_action( 'cleanup_expired_tokens', array($this,'cleanup_expired_tokens'), 10, 2 );
+
+        if(is_admin()) {
+            //administrator setting menu
+            add_action('admin_init', array(&$this, 'option_register'));
+        }
 
      }
-     function add_plugin_admin_menu()
+
+     function add_pages()
      {
          add_options_page(
               'Auto_Login_Url', // page_title（オプションページのHTMLのタイトル）
               'AutoLoginUrl', // menu_title（メニューで表示されるタイトル）
               'administrator', // capability
               'auto-login-url', // menu_slug（URLのスラッグこの例だとoptions-general.php?page=hello-world）
-              array(&$this,'add_pages') // function
+              array(&$this,'create_html_page') // function
          );
     }
 
+    public function option_register()
+    {
+        _log("option_register");
+        register_setting('post6widget_optiongroup', 'post6widget_option');
+        //load css file into <head> tag
+        $urlpath = plugins_url('admin.css', __FILE__);
+        wp_register_style('post6style', $urlpath);
+        wp_enqueue_style('post6style');
+    }
+
+ 
 
 
     /**
      * Handle cleanup process for expired auto login tokens.
      */
-    function auto_login_url_cleanup_expired_tokens( $user_id, $expired_tokens ) {
+    function cleanup_expired_tokens( $user_id, $expired_tokens ) {
     	//_log("expired_tokens,user_id=".$user_id);
     	$tokens = get_user_meta( $user_id, 'auto_login_url_token', true );
     	$tokens = is_string( $tokens ) ? array( $tokens ) : $tokens;
@@ -73,7 +86,7 @@ class AutoLoginUrl
     /**
      * Log a request in as a user if the token is valid.
      */
-    function auto_login_url_handle_token() {
+    function handle_token() {
     	global $pagenow;
     
     	if ( 'wp-login.php' !== $pagenow || empty( $_GET['user_id'] ) || empty( $_GET['auto_login_url_token'] ) ) {
@@ -95,7 +108,7 @@ class AutoLoginUrl
     				continue;
     			}
     			foreach ( $hooks as $hook => $hook_events ) {
-    				if ( 'auto_login_url_cleanup_expired_tokens' !== $hook ) {
+    				if ( 'cleanup_expired_tokens' !== $hook ) {
     					continue;
     				}
     				foreach ( $hook_events as $sig => $data ) {
@@ -172,34 +185,12 @@ class AutoLoginUrl
 
 
 
-    // https://celtislab.net/archives/20130515/wordpress%E3%83%97%E3%83%A9%E3%82%B0%E3%82%A4%E3%83%B3%E3%81%A7%E5%A4%96%E9%83%A8css%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E3%82%92%E4%BD%BF%E3%81%A3%E3%81%A6%E3%81%BF%E3%82%8B/
-    public function auto_login_url_option_register()
-    {
-        register_setting('post6widget_optiongroup', 'post6widget_option');
-        //管理画面の<head> 内でCSSファイルを読みこませる
-        $urlpath = plugins_url('admin.css', __FILE__);
-        wp_register_style('post6style', $urlpath);
-        wp_enqueue_style('post6style');
-    }
-
- 
-    function add_pages()
-    {
-        add_menu_page(
-            'AutoLoginUrl Plugin Settings',
-            'AutoLoginUrl',
-            'manage_options',
-            'AutoLoginUrlPluginMenu',
-            array($this, 'auto_login_url_plugin')
-        );
-    } 
-
     /**
      * create html of adminstrator page
      */
-    function auto_login_url_plugin()
+    function create_html_page()
     {
-        _log("auto_login_url_plugin");
+        _log("create_html_page");
         if (isset($_REQUEST["submit"]["detail"])) {
             //詳細
             self::detail();
@@ -244,6 +235,7 @@ class AutoLoginUrl
      */
     function disp()
     {
+        _log("disp");
         // data list
         echo <<< EOL
     <form action="" method="post">
@@ -842,7 +834,7 @@ EOL;
 
 
 
-    function auto_login_url_activate()
+    function plugin_activate()
     {
         global $wpdb;
         $table_name = $wpdb->prefix . $this->TABLE;
@@ -868,7 +860,7 @@ EOL;
     /**
     *  call when plugin stopped
     */
-//    function auto_login_url_unactivate()
+//    function plugin_unactivate()
 //    {
 //        // delete table data
 //        global $wpdb;
@@ -883,21 +875,21 @@ EOL;
 
 
     // check database version when plugin updated
-    function auto_login_url_update_db_check()
+    function update_db_check()
     {
          //$version=get_site_option( 'auto_login_url_db_version' );
          //if ( $version or $version!= $this->DBVER ) {
-         //      $this->auto_login_url_activate();
+         //      $this->plugin_activate();
          //}
     }
 
     /**
      * call when plugin uninstalled
      */
-    function auto_login_url_uninstall()
+    function plugin_uninstall()
     {
         global $wpdb;
-        //_log("auto_login_url_uninstall");
+        //_log("plugin_uninstall");
         delete_option('auto_login_url_db_version');
         $table_name = $wpdb->prefix . $this->TABLE;
         $sql_drop = 'DROP TABLE ' . $table_name ;
