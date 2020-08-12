@@ -56,7 +56,7 @@ class AutoLoginUrl
 
     public function option_register()
     {
-        _log("option_register");
+        error_log("option_register");
         register_setting('post6widget_optiongroup', 'post6widget_option');
         //load css file into <head> tag
         $urlpath = plugins_url('admin.css', __FILE__);
@@ -71,7 +71,7 @@ class AutoLoginUrl
      * Handle cleanup process for expired auto login tokens.
      */
     function cleanup_expired_tokens( $user_id, $expired_tokens ) {
-    	//_log("expired_tokens,user_id=".$user_id);
+    	error_log("expired_tokens,user_id=".$user_id);
     	$tokens = get_user_meta( $user_id, 'auto_login_url_token', true );
     	$tokens = is_string( $tokens ) ? array( $tokens ) : $tokens;
     	$new_tokens = array();
@@ -133,17 +133,17 @@ class AutoLoginUrl
     	$is_valid = false;
     	$time=time();
     	foreach ( $tokens as $i => $token ) {
-    		//_log("expire_date=".$token["expire_date"]);
-    		//_log("expire_date=".strftime('%Y-%m-%d %H:%M:%S',$token["expire_date"]));
-    		//_log("time=".strftime('%Y-%m-%d %H:%M:%S',$time));
+    		error_log("expire_date=".$token["expire_date"]);
+    		error_log("expire_date=".strftime('%Y-%m-%d %H:%M:%S',$token["expire_date"]));
+    		error_log("time=".strftime('%Y-%m-%d %H:%M:%S',$time));
     		if($token["expire_date"]!=0 and $token["expire_date"]<$time){
-    			//_log("unset1");
+    			error_log("unset1");
     			unset($tokens[ $i ]);
     			continue;
     		}
     /*
     		if($token["to_date"]<$time){
-    			_log("unset3");
+    			error_log("unset3");
     			unset($tokens[ $i ]);
     			continue;
     		}
@@ -153,7 +153,7 @@ class AutoLoginUrl
     		if ( hash_equals( $token["token"], $_GET['auto_login_url_token'] ) and $token["start_date"]<=$time ) {
     			$is_valid = true;
     			if( $token["expire_date"]==0){
-    				//_log("unset2");
+    				error_log("unset2");
     				unset( $tokens[ $i ] );
     			}
     			break;
@@ -166,7 +166,7 @@ class AutoLoginUrl
     		wp_die( $error );
     	}
     
-    	//_log("tokens=".var_dump($tokens));
+    	error_log("tokens=".var_dump($tokens));
     	do_action( 'auto_login_url_logged_in', $user );
     	//update_user_meta( $user->ID, 'auto_login_url_token', $tokens );
     	wp_set_auth_cookie( $user->ID, true, is_ssl() );
@@ -187,7 +187,7 @@ class AutoLoginUrl
      */
     function create_html_page()
     {
-        _log("create_html_page");
+        error_log("create_html_page");
         if (isset($_REQUEST["submit"]["detail"])) {
             //詳細
             self::detail();
@@ -232,7 +232,7 @@ class AutoLoginUrl
      */
     function disp()
     {
-        _log("disp");
+        error_log("disp");
         // data list
         echo <<< EOL
     <form action="" method="post">
@@ -266,11 +266,11 @@ EOL;
         $sql = "SELECT count(*) AS CNT FROM {$tbl_name}";
         $rows = $wpdb->get_results($sql);
         $recordcount = $rows[0]->CNT;
-        _log("recordcount=".$recordcount);
+        error_log("recordcount=".$recordcount);
         
         // decide offset value
         $offset = $pageid * $limit;
-        _log("offset=".$offset.",limit=".$limit);
+        error_log("offset=".$offset.",limit=".$limit);
         
         //create sql using offset and  limit
         $sql = "SELECT * FROM {$tbl_name} ORDER BY id limit {$offset}, {$limit}";
@@ -886,11 +886,11 @@ EOL;
     function plugin_uninstall()
     {
         global $wpdb;
-        //_log("plugin_uninstall");
+        error_log("plugin_uninstall");
         delete_option('auto_login_url_db_version');
         $table_name = $wpdb->prefix . $this->TABLE;
         $sql_drop = 'DROP TABLE ' . $table_name ;
-        //_log($sql_drop);
+        error_log($sql_drop);
         $wpdb->query($sql_drop);
 
     }
